@@ -153,8 +153,10 @@ document.addEventListener('DOMContentLoaded', () => {
       // Update local storage with the merged quotes
       saveQuotes();
       populateCategories();
-      alert('Quotes synced with server successfully!');
-
+      
+      // Notify user that quotes have been synced with the server
+      alert('Quotes synced with server!');
+      
       // Send updated quotes to the server
       await sendQuotesToServer(quotes);
     } catch (error) {
