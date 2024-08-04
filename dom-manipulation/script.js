@@ -141,38 +141,58 @@ document.addEventListener('DOMContentLoaded', () => {
 
   async function syncQuotes() {
     try {
-      const serverQuotes = await fetchQuotesFromServer();
+        // Fetch quotes from the server
+        const serverQuotes = await fetchQuotesFromServer();
 
-      // Resolve conflicts by giving precedence to server data
-      quotes = [...new Map([...serverQuotes, ...quotes].map(item => [item.text, item])).values()];
+        // Resolve conflicts by giving precedence to server data
+        quotes = [...new Map([...serverQuotes, ...quotes].map(item => [item.text, item])).values()];
 
-      saveQuotes();
-      populateCategories();
-      alert('Quotes synced with server successfully!');
+        // Update local storage with the merged quotes
+        saveQuotes();
+        populateCategories();
+        alert('Quotes synced with server successfully!');
+
+        // Send updated quotes to the server
+        await sendQuotesToServer(quotes);
     } catch (error) {
-      console.error('Error syncing quotes with server:', error);
+        console.error('Error syncing quotes with server:', error);
     }
-  }
+}
 
-  newQuoteButton.addEventListener('click', showRandomQuote);
-  exportQuotesButton.addEventListener('click', exportQuotes);
-  importFileInput.addEventListener('change', importFromJsonFile);
+async function sendQuotesToServer(quotes) {
+    try {
+        const response = await fetch(serverUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(quotes)
+        });
 
-  // Display the last viewed quote from session storage if available
-  const lastViewedQuote = JSON.parse(sessionStorage.getItem('lastViewedQuote'));
-  if (lastViewedQuote) {
-    quoteDisplay.innerHTML = `"${lastViewedQuote.text}" - ${lastViewedQuote.category}`;
-  } else {
-    // Display the first random quote on page load
-    showRandomQuote();
-  }
+        if (!response.ok) {
+            throw new Error(`Server error: ${response.statusText}`);
+        }
 
-  // Populate the category filter dropdown
-  populateCategories();
+        console.log('Quotes successfully sent to server.');
+    } catch (error) {
+        console.error('Error sending quotes to server:', error);
+    }
+}
 
-  // Create the form for adding new quotes
-  createAddQuoteForm();
-
-  // Sync quotes with the server periodically (every 60 seconds)
-  setInterval(syncQuotes, 60000);
-});
+async function fetchQuotesFromServer() {
+    try {
+        const response = await fetch(serverUrl);
+        if (!response.ok) {
+            throw new Error(`Server error: ${response.statusText}`);
+        }
+        const serverQuotes = await response.json();
+        // Assuming server quotes have the same structure as local quotes
+        return serverQuotes.map(quote => ({
+            text: quote.body,
+            category: 'Server' // Assuming server quotes don't have categories
+        }));
+    } catch (error) {
+        console.error('Error fetching quotes from server:', error);
+        return [];
+    }
+}
