@@ -12,6 +12,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Add more initial quotes if desired
   ];
 
+  const serverUrl = 'https://jsonplaceholder.typicode.com/posts'; // Replace with your actual endpoint
+
   function saveQuotes() {
     localStorage.setItem('quotes', JSON.stringify(quotes));
   }
@@ -60,6 +62,7 @@ document.addEventListener('DOMContentLoaded', () => {
       document.getElementById('newQuoteText').value = '';
       document.getElementById('newQuoteCategory').value = '';
       alert('Quote added successfully!');
+      syncWithServer();
     } else {
       alert('Please enter both a quote and a category.');
     }
@@ -85,6 +88,7 @@ document.addEventListener('DOMContentLoaded', () => {
       saveQuotes();
       populateCategories();
       alert('Quotes imported successfully!');
+      syncWithServer();
     };
     fileReader.readAsText(event.target.files[0]);
   }
@@ -120,6 +124,41 @@ document.addEventListener('DOMContentLoaded', () => {
     return quotes.filter(quote => quote.category === selectedCategory);
   }
 
+  async function fetchQuotesFromServer() {
+    try {
+      const response = await fetch(serverUrl);
+      const serverQuotes = await response.json();
+      quotes = serverQuotes.map(quote => ({
+        text: quote.body,
+        category: 'Server' // Assuming server quotes don't have categories
+      }));
+      saveQuotes();
+      populateCategories();
+      alert('Quotes fetched from server successfully!');
+    } catch (error) {
+      console.error('Error fetching quotes from server:', error);
+    }
+  }
+
+  async function syncWithServer() {
+    try {
+      const response = await fetch(serverUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(quotes)
+      });
+      if (response.ok) {
+        alert('Quotes synced with server successfully!');
+      } else {
+        alert('Failed to sync quotes with server.');
+      }
+    } catch (error) {
+      console.error('Error syncing quotes with server:', error);
+    }
+  }
+
   newQuoteButton.addEventListener('click', showRandomQuote);
   exportQuotesButton.addEventListener('click', exportQuotes);
   importFileInput.addEventListener('change', importFromJsonFile);
@@ -138,4 +177,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Create the form for adding new quotes
   createAddQuoteForm();
+
+  // Fetch quotes from server periodically (every 60 seconds)
+  setInterval(fetchQuotesFromServer, 60000);
 });
