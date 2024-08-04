@@ -62,7 +62,7 @@ document.addEventListener('DOMContentLoaded', () => {
       document.getElementById('newQuoteText').value = '';
       document.getElementById('newQuoteCategory').value = '';
       alert('Quote added successfully!');
-      syncWithServer();
+      syncQuotes(); // Sync after adding a quote
     } else {
       alert('Please enter both a quote and a category.');
     }
@@ -88,7 +88,7 @@ document.addEventListener('DOMContentLoaded', () => {
       saveQuotes();
       populateCategories();
       alert('Quotes imported successfully!');
-      syncWithServer();
+      syncQuotes(); // Sync after importing quotes
     };
     fileReader.readAsText(event.target.files[0]);
   }
@@ -128,32 +128,27 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       const response = await fetch(serverUrl);
       const serverQuotes = await response.json();
-      quotes = serverQuotes.map(quote => ({
+      // Assuming server quotes have the same structure as local quotes
+      return serverQuotes.map(quote => ({
         text: quote.body,
         category: 'Server' // Assuming server quotes don't have categories
       }));
-      saveQuotes();
-      populateCategories();
-      alert('Quotes fetched from server successfully!');
     } catch (error) {
       console.error('Error fetching quotes from server:', error);
+      return [];
     }
   }
 
-  async function syncWithServer() {
+  async function syncQuotes() {
     try {
-      const response = await fetch(serverUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(quotes)
-      });
-      if (response.ok) {
-        alert('Quotes synced with server successfully!');
-      } else {
-        alert('Failed to sync quotes with server.');
-      }
+      const serverQuotes = await fetchQuotesFromServer();
+
+      // Resolve conflicts by giving precedence to server data
+      quotes = [...new Map([...serverQuotes, ...quotes].map(item => [item.text, item])).values()];
+
+      saveQuotes();
+      populateCategories();
+      alert('Quotes synced with server successfully!');
     } catch (error) {
       console.error('Error syncing quotes with server:', error);
     }
@@ -178,6 +173,6 @@ document.addEventListener('DOMContentLoaded', () => {
   // Create the form for adding new quotes
   createAddQuoteForm();
 
-  // Fetch quotes from server periodically (every 60 seconds)
-  setInterval(fetchQuotesFromServer, 60000);
+  // Sync quotes with the server periodically (every 60 seconds)
+  setInterval(syncQuotes, 60000);
 });
