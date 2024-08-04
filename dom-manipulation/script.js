@@ -12,7 +12,11 @@ document.addEventListener('DOMContentLoaded', () => {
   function showRandomQuote() {
     const randomIndex = Math.floor(Math.random() * quotes.length);
     const randomQuote = quotes[randomIndex];
-    quoteDisplay.textContent = `"${randomQuote.text}" - ${randomQuote.category}`;
+    // Clear the previous quote
+    quoteDisplay.textContent = '';
+    const quoteText = document.createElement('p');
+    quoteText.textContent = `"${randomQuote.text}" - ${randomQuote.category}`;
+    quoteDisplay.appendChild(quoteText);
   }
 
   newQuoteButton.addEventListener('click', showRandomQuote);
